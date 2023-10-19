@@ -22,7 +22,7 @@ export construct_pov, render
 function render(
             objs::Object, 
             camera::Camera=LookAtCamera(), 
-            light::Light=PointLight([0.0, 2.0, 0.0], [0.0, 0.0, 0.0]),
+            light::Light=PointLight([0.0, 2.0, 0.0], [0.0, 0.0, 0.0]);
             include::Vector{String}=["colors.inc"],
             pov_path::String="/tmp/auto_generated.pov", 
             ini_path::String="/tmp/auto_generated.ini",
