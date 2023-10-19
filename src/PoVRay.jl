@@ -13,6 +13,7 @@ export RGBFT
 export Object
 export Sphere 
 export Colored
+export CSGUnion
 export Camera, LookAtCamera
 export Light, PointLight
 export construct_pov, render
