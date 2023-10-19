@@ -25,7 +25,8 @@ function render(
             light::Light=PointLight([0.0, 2.0, 0.0], [0.0, 0.0, 0.0]),
             include::Vector{String}=["colors.inc"],
             pov_path::String="/tmp/auto_generated.pov", 
-            ini_path::String="/tmp/auto_generated.ini"
+            ini_path::String="/tmp/auto_generated.ini",
+            output_path::String="/tmp/auto_generated.png"
         )
     str = "#version 3.7;
 global_settings{assumed_gamma 1.0}\n\n
@@ -47,10 +48,19 @@ global_settings{assumed_gamma 1.0}\n\n
     close(io)
 
     io = open(ini_path, "w")
-    write(io, "Width=1000\nHeight=500\nAntialias=On\n")
+    write(io, "
+Width=1000
+Height=500
+
+Antialias=On
+
+Input_File_Name=$pov_path
+Output_File_Name=$output_path
+"
+)
     close(io)
 
-    run(`povray $pov_path`)
+    run(`povray $ini_path`)
 end
 
 
