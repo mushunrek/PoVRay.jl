@@ -8,7 +8,7 @@ include("lights.jl")
 
 using .ElementaryObjects, .Points, .Objects, .Cameras, .Lights 
 
-export Point
+export Point3D
 export RGBFT
 export Object
 export Sphere 

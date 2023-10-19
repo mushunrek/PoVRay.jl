@@ -14,10 +14,10 @@ abstract type BasicShape <: Object end
 abstract type CSG <: Object end
 
 struct Sphere <: BasicShape
-    position::Point
+    position::Point3D
     radius::Float64
 
-    Sphere(position, radius) = new(Point(position), radius)
+    Sphere(position, radius) = new(Point3D(position), radius)
 end
 
 Sphere() = Sphere([0.0, 0.0, 0.0], 1.0)

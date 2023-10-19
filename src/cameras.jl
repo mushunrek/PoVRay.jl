@@ -8,11 +8,11 @@ export Camera, LookAtCamera
 abstract type Camera <: POV end
 
 struct LookAtCamera <: Camera
-    position::Point
-    look_at::Point
+    position::Point3D
+    look_at::Point3D
 
     function LookAtCamera(position, look_at)
-        new(Point(position), Point(look_at))
+        new(Point3D(position), Point3D(look_at))
     end
 end
 

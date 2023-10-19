@@ -9,9 +9,9 @@ export Light, PointLight
 abstract type Light <: POV end
 
 struct PointLight <: Light 
-    position::Point 
-    point_at::Point
-    PointLight(position, point_at) = new(Point(position), Point(point_at))
+    position::Point3D 
+    point_at::Point3D
+    PointLight(position, point_at) = new(Point3D(position), Point3D(point_at))
 end
 
 function ElementaryObjects.construct_pov(light::PointLight)
