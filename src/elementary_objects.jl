@@ -15,7 +15,7 @@ struct RGBFT <: POV
     transmit::Float64
 end
 
-function RGBFT(color::String="white", filter=0.0, transmit=0.0)
+function RGBFT(color::String="white"; filter=0.0, transmit=0.0)
     (color in keys(Colors.color_names)) || error("Unknown Color! For more information, see `Colors.color_names`")
     RGBFT(
         RGB((Colors.color_names[color]./255)...), filter, transmit
