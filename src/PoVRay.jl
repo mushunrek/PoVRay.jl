@@ -60,7 +60,7 @@ Output_File_Name=$output_path
 )
     end
 
-    run(`povray $ini_path`)
+    run(`povray -D $ini_path`)
 end
 
 
