@@ -1,18 +1,17 @@
 module Cameras
 
 using ..ElementaryObjects
-using ..Points
 
 export Camera, LookAtCamera
 
-abstract type Camera <: POV end
+abstract type Camera <: AbstractPoVRay end
 
 struct LookAtCamera <: Camera
-    position::Point3D
-    look_at::Point3D
+    position::PoVRayPoint
+    look_at::PoVRayPoint
 
     function LookAtCamera(position, look_at)
-        new(Point3D(position), Point3D(look_at))
+        new(PoVRayPoint(position), PoVRayPoint(look_at))
     end
 end
 

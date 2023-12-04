@@ -51,7 +51,7 @@ function PoVRayPoint(v::Vector{T}) where T <: Number
     )
 end
 
-ElementaryObjects.construct_pov(point::Point3D) = "<$(point.x), $(point.y), $(point.z)>"
+ElementaryObjects.construct_pov(point::PoVRayPoint) = "<$(point.x), $(point.y), $(point.z)>"
 
 
 struct RGBFT <: AbstractPoVRay

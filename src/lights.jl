@@ -1,17 +1,16 @@
 module Lights
 
 using ..ElementaryObjects
-using ..Points
 using Colors
 
 export Light, PointLight
 
-abstract type Light <: POV end
+abstract type Light <: AbstractPoVRay end
 
 struct PointLight <: Light 
-    position::Point3D 
-    point_at::Point3D
-    PointLight(position, point_at) = new(Point3D(position), Point3D(point_at))
+    position::PoVRayPoint 
+    point_at::PoVRayPoint
+    PointLight(position, point_at) = new(PoVRayPoint(position), PoVRayPoint(point_at))
 end
 
 function ElementaryObjects.construct_pov(light::PointLight)

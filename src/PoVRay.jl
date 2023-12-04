@@ -1,19 +1,18 @@
 module PoVRay
 
 include("elementary_objects.jl")
-include("points.jl")
 include("objects.jl")
 include("cameras.jl")
 include("lights.jl")
 
-using .ElementaryObjects, .Points, .Objects, .Cameras, .Lights 
+using .ElementaryObjects, .Objects, .Cameras, .Lights 
 
-export Point3D
+export AbstractPoVRay, PoVRayNumber, PoVRayPoint
 export RGBFT
-export Object, BasicObject
-export Sphere, BasicSphere 
-export Colored
-export CSGUnion
+export Object
+export BasicSphere 
+#export Colored
+#export CSGUnion
 export Camera, LookAtCamera
 export Light, PointLight
 export construct_pov, render
