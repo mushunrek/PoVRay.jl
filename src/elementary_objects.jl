@@ -2,14 +2,36 @@ module ElementaryObjects
 
 using Colors
 
-export POV, construct_pov
-export RGBFT
+export AbstractPoVRay, construct_pov
+export PoVRayNumber, PoVRayPoint, RGBFT
 
-abstract type POV end
+abstract type AbstractPoVRay end
 
-function construct_pov(::POV) end
+function construct_pov(::AbstractPoVRay) end
 
-struct RGBFT <: POV
+struct PoVRayNumber <: AbstractPoVRay
+    f::Float64
+    PoVRayNumber(f) = new(Float64(f))
+end
+
+construct_pov(f::PoVRayNumber) = "$f.f"
+
+struct PoVRayPoint <: AbstractPoVRay
+    x::Float64
+    y::Float64
+    z::Float64
+end
+
+function PoVRayPoint(v::Vector{T}) where T <: Number
+    PoVRayPoint(
+        Float64.(v)...
+    )
+end
+
+ElementaryObjects.construct_pov(point::Point3D) = "<$(point.x), $(point.y), $(point.z)>"
+
+
+struct RGBFT <: AbstractPoVRay
     color::RGB
     filter::Float64
     transmit::Float64

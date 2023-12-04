@@ -1,17 +1,40 @@
 module Objects
 
 using ..ElementaryObjects
-using ..Points
 using Colors
 
-export Object, BasicShape
-export Sphere
+export Object, BasicShape, BasicObject
+export Sphere, BasicSphere
 export Colored
 export CSG, CSGUnion
 
-abstract type Object <: POV end
+abstract type Object <: AbstractPoVRay end
 abstract type BasicShape <: Object end
 abstract type CSG <: Object end
+
+struct BasicObject <: Object 
+    tag::String
+    properties::Vector{AbstractPoVRay}
+    modifiers::Dict{Symbol, AbstractPoVRay}
+
+    function BasicObject(tag, properties, modifiers; force_creation=false)
+        if force_creation == true
+            return new(tag, properties, modifiers)
+        end
+        error("Please refer to `?BasicObject` on how to correctly implement a new BasicObject")
+    end
+end
+
+Base.getindex(o::BasicObject, modif::Symbol) = o.modifiers[modif]
+function Base.setindex!(o::BasicObject, p::POV, modif::Symbol)
+    o.modifiers[modif] = p
+end
+
+function ElementaryObjects.construct_pov(o::BasicObject)
+    "$(o.tag){\n\t$(join( construct_pov.(o.properties), "\n\t"))\n}"
+end
+
+BasicSphere(position, radius) = BasicObject("sphere", [Point3D(position), RealPOV(radius)], Dict(), force_creation=true)
 
 struct Sphere <: BasicShape
     position::Point3D

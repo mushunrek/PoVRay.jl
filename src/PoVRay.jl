@@ -10,8 +10,8 @@ using .ElementaryObjects, .Points, .Objects, .Cameras, .Lights
 
 export Point3D
 export RGBFT
-export Object
-export Sphere 
+export Object, BasicObject
+export Sphere, BasicSphere 
 export Colored
 export CSGUnion
 export Camera, LookAtCamera
