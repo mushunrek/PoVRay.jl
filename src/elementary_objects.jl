@@ -31,7 +31,7 @@ struct PoVRayNumber <: AbstractPoVRay
     PoVRayNumber(f) = new(Float64(f))
 end
 
-construct_pov(f::PoVRayNumber) = "$f.f"
+construct_pov(f::PoVRayNumber) = "$(f.f)"
 
 """
     PoVRayPoint(x, y, z)

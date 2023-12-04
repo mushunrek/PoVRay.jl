@@ -3,10 +3,11 @@ module Objects
 using ..ElementaryObjects
 using Colors
 
-export Object, BasicShape, BasicObject
-export Sphere, BasicSphere
-export Colored
-export CSG, CSGUnion
+export PoVRayObject
+export Sphere
+export Colored, color!
+export Union
+#export CSG, CSGUnion
 
 """
     Object(tag, descriptors, modifiers)
@@ -38,10 +39,10 @@ constructor
 """
 struct PoVRayObject <: AbstractPoVRay
     tag::String
-    descriptors::Tuple{AbstractPoVRay}
+    descriptors::Vector{AbstractPoVRay}
     modifiers::Dict{Symbol, AbstractPoVRay}
 
-    function Object(tag, descriptors, modifiers; force_creation=false)
+    function PoVRayObject(tag, descriptors, modifiers; force_creation=false)
         if force_creation == true
             return new(tag, descriptors, modifiers)
         end
@@ -53,9 +54,35 @@ Base.getindex(o::PoVRayObject, modif::Symbol) = o.modifiers[modif]
 function Base.setindex!(o::PoVRayObject, p::AbstractPoVRay, modif::Symbol)
     o.modifiers[modif] = p
 end
+function Base.deepcopy(object::PoVRayObject)
+    PoVRayObject(
+        object.tag,
+        object.descriptors,
+        object.modifiers,
+        force_creation=true
+    )
+end
 
-function ElementaryObjects.construct_pov(o::PoVRayObject)
-    "$(o.tag){\n\t$(join( construct_pov.(o.properties), "\n\t"))\n}"
+function ElementaryObjects.construct_pov(object::PoVRayObject)
+    pov = "$(object.tag){\n\t"
+    for d in object.descriptors
+        pov *= replace(
+                    construct_pov(d),
+                    "\n" => "\n\t"
+                )
+    end
+    for m in object.modifiers
+        if m.first == :scale
+            pov *= "scale $(construct_pov(m.second))\n\t"
+        elseif m.first == :translate
+            pov *= "translate $(construct_pov(m.second))\n\t"
+        elseif m.first == :rotate 
+            pov *= "rotate $(construct_pov(m.second))\n\t"
+        else
+            pov *= "$(construct_pov(m.second))\n\t"
+        end
+    end
+    return pov * "\n}\n"
 end
 
 """
@@ -69,11 +96,41 @@ s[:scale] = 0.5
 s[:translate] = [1, 4.2, -3]
 """
 function Sphere(position, radius)
-    BasicObject(
+    PoVRayObject(
         "sphere", 
         [PoVRayPoint(position), PoVRayNumber(radius)], 
         Dict(), 
-        force_creation=true)
+        force_creation=true
+    )
+end
+
+function Pigment(rgbft::RGBFT)
+    PoVRayObject(
+        "pigment",
+        [rgbft],
+        Dict(),
+        force_creation=true
+    )
+end
+
+function color!(object::PoVRayObject, rgbft::RGBFT)
+    object[:pigment] = Pigment(rgbft)
+    return nothing
+end
+
+function Colored(object::PoVRayObject, rgbft::RGBFT)
+    colored = deepcopy(object)
+    colored[:pigment] = Pigment(rgbft)
+    return colored
+end
+
+function Union(objects::Vector{PoVRayObject})
+    PoVRayObject(
+        "union",
+        objects,
+        Dict(),
+        force_creation=true
+    )
 end
 
 """

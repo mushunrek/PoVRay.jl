@@ -9,17 +9,17 @@ using .ElementaryObjects, .Objects, .Cameras, .Lights
 
 export AbstractPoVRay, PoVRayNumber, PoVRayPoint
 export RGBFT
-export Object
-export BasicSphere 
-#export Colored
-#export CSGUnion
+export PoVRayObject
+export Sphere 
+export Colored, color!
+export Union
 export Camera, LookAtCamera
 export Light, PointLight
 export construct_pov, render
 
 
 function render(
-            objs::Object, 
+            objs::PoVRayObject, 
             camera::Camera=LookAtCamera(), 
             light::Light=PointLight([0.0, 2.0, 0.0], [0.0, 0.0, 0.0]);
             include::Vector{String}=["colors.inc"],
