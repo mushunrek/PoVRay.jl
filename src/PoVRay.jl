@@ -25,7 +25,8 @@ function render(
             include::Vector{String}=["colors.inc"],
             pov_path::String="/tmp/auto_generated.pov", 
             ini_path::String="/tmp/auto_generated.ini",
-            output_path::String="/tmp/auto_generated.png"
+            output_path::String="/tmp/auto_generated.png",
+            width=1000, height=500
         )
     str = "#version 3.7;
 global_settings{assumed_gamma 1.0}\n\n
@@ -48,8 +49,8 @@ global_settings{assumed_gamma 1.0}\n\n
 
     open(ini_path, "w") do f
         write(f, "
-Width=1000
-Height=500
+Width=$width
+Height=$height
 
 Antialias=On
 

@@ -1,19 +1,20 @@
 module Objects
 
 using ..ElementaryObjects
+using ..Modifiers
 using Colors
 
 export PoVRayObject
 export Sphere
 export Colored, color!
-export Union
+export CSGUnion
 #export CSG, CSGUnion
 
 """
-    Object(tag, descriptors, modifiers)
+    PoVRayObject{N}(tag, descriptors, modifiers)
 
 Implementation of PoVRay objects. This type is not to be instantiated through
-its constructor! Doing so will throw an error. Instead, any `Object` should be 
+its constructor! Doing so will throw an error. Instead, any `PoVRayObject` should be 
 instantiated through one of the specialized constructor, e.g.
     Sphere(position, radius)
     Colored(object, rgbft)
@@ -21,39 +22,35 @@ instantiated through one of the specialized constructor, e.g.
 # Fields 
 - `tag::String`: describes what type of object it is. These correspond to the 
     object names from PoVRay, see also the [official webpage](https://www.povray.org/documentation/view/3.7.1/273/).
-- `descriptors::Tuple{AbstractPoVRay}`: Immutable list of descriptors defining 
+- `descriptors::NTuple{N, AbstractPoVRay}`: Immutable list of descriptors defining 
     the object. For a sphere, the descriptors are its position and its radius.
-- `modifiers::Dict{Symbol, AbstractPoVRay}`: Dictionary containing modifiers 
+- `modifiers::Vector{AbstractPoVRay}`: Dictionary containing modifiers 
     for the object. Common modifiers are `:translate`, `:rotate` and `:scale`.
     Pigments are also modifiers.
 
 # Extended Help
-If you still want to use the basic constructor `Object(tag, description, modifiers)`:
+If you still want to use the basic constructor `PoVRayObject(tag, description, modifiers)`:
 *don't*! If this package is complete, this should never be necessary. If you still think
 it necessary, consider submitting a new issue on [GitHub](https://github.com/mushunrek/PoVRay.jl).
 
 Still not deterred? You can force the creation of a new Object by using the 
 constructor 
 
-    Object(tag, descriptors, modifiers, force_creation=true)
+    PoVRayObject(tag, descriptors, modifiers, force_creation=true)
 """
-struct PoVRayObject <: AbstractPoVRay
+struct PoVRayObject{N} <: AbstractPoVRay
     tag::String
-    descriptors::Vector{AbstractPoVRay}
-    modifiers::Dict{Symbol, AbstractPoVRay}
+    descriptors::NTuple{N, AbstractPoVRay}
+    modifiers::Vector{AbstractPoVRay}
 
     function PoVRayObject(tag, descriptors, modifiers; force_creation=false)
         if force_creation == true
-            return new(tag, descriptors, modifiers)
+            return new{length(descriptors)}(tag, descriptors, modifiers)
         end
         error("Please refer to `?BasicObject` on how to correctly implement a new BasicObject")
     end
 end
 
-Base.getindex(o::PoVRayObject, modif::Symbol) = o.modifiers[modif]
-function Base.setindex!(o::PoVRayObject, p::AbstractPoVRay, modif::Symbol)
-    o.modifiers[modif] = p
-end
 function Base.deepcopy(object::PoVRayObject)
     PoVRayObject(
         object.tag,
@@ -65,6 +62,21 @@ end
 
 function ElementaryObjects.construct_pov(object::PoVRayObject)
     pov = "$(object.tag){\n\t"
+    pov *= replace(
+        join(
+            construct_pov.(object.descriptors), "\n\t"
+        ),
+        "\n" => "\n\t"
+    )
+    pov *= "\n\t"
+    pov *= replace(
+        join(
+            construct_pov.(object.descriptors), "\n\t"
+        ),
+        "\n" => "\n\t"
+    )
+    pov *= "\n}\n"
+    """
     for d in object.descriptors
         pov *= replace(
                     construct_pov(d),
@@ -72,17 +84,39 @@ function ElementaryObjects.construct_pov(object::PoVRayObject)
                 )
     end
     for m in object.modifiers
-        if m.first == :scale
-            pov *= "scale $(construct_pov(m.second))\n\t"
-        elseif m.first == :translate
-            pov *= "translate $(construct_pov(m.second))\n\t"
-        elseif m.first == :rotate 
-            pov *= "rotate $(construct_pov(m.second))\n\t"
-        else
-            pov *= "$(construct_pov(m.second))\n\t"
-        end
+        pov *= "$(replace(
+                        construct_pov(m),
+                        "\n" => "\n\t"
+                    )
+                )\n\t"
     end
-    return pov * "\n}\n"
+    """
+    return pov
+end
+
+function modify!(object::PoVRayObject, modifier::PoVRayModifier)
+    append!(object.modifiers, modifier)
+end
+
+function scale!(object::PoVRayObject, scaling)
+    modify!(
+        object,
+        Scaling(scaling)
+    )
+end
+
+function translate!(object::PoVRayObject, translation)
+    modify!(
+        object,
+        Translation(translation)
+    )
+end
+
+function rotate!(object::PoVRayObject, rotation)
+    modify!(
+        object,
+        Rotation()
+    )
 end
 
 """
@@ -95,20 +129,11 @@ s = Sphere([0.0, 0.0, 0.0], 2)
 s[:scale] = 0.5
 s[:translate] = [1, 4.2, -3]
 """
-function Sphere(position, radius)
+function Sphere(position, radius; modifiers::Vector{PoVRayObject})
     PoVRayObject(
         "sphere", 
-        [PoVRayPoint(position), PoVRayNumber(radius)], 
-        Dict(), 
-        force_creation=true
-    )
-end
-
-function Pigment(rgbft::RGBFT)
-    PoVRayObject(
-        "pigment",
-        [rgbft],
-        Dict(),
+        (PoVRayPoint(position), PoVRayNumber(radius)), 
+        modifiers, 
         force_creation=true
     )
 end
@@ -124,11 +149,11 @@ function Colored(object::PoVRayObject, rgbft::RGBFT)
     return colored
 end
 
-function Union(objects::Vector{PoVRayObject})
+function CSGUnion(objects::Union{Vector{PoVRayObject}, NTuple{N, PoVRayNumber}}) where N
     PoVRayObject(
         "union",
-        objects,
-        Dict(),
+        Tuple(objects),
+        [],
         force_creation=true
     )
 end
