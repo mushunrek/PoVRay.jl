@@ -1,207 +1,121 @@
 module Objects
 
-using ..ElementaryObjects
-using ..Modifiers
-using Colors
+using ReusePatterns
+
+using ..AbstractSuperType, ..Modifiers
 
 export PoVRayObject
 export Sphere
-export Colored, color!
+export Plane 
 export CSGUnion
-#export CSG, CSGUnion
 
-"""
-    PoVRayObject{N}(tag, descriptors, modifiers)
-
-Implementation of PoVRay objects. This type is not to be instantiated through
-its constructor! Doing so will throw an error. Instead, any `PoVRayObject` should be 
-instantiated through one of the specialized constructor, e.g.
-    Sphere(position, radius)
-    Colored(object, rgbft)
-
-# Fields 
-- `tag::String`: describes what type of object it is. These correspond to the 
-    object names from PoVRay, see also the [official webpage](https://www.povray.org/documentation/view/3.7.1/273/).
-- `descriptors::NTuple{N, AbstractPoVRay}`: Immutable list of descriptors defining 
-    the object. For a sphere, the descriptors are its position and its radius.
-- `modifiers::Vector{AbstractPoVRay}`: Dictionary containing modifiers 
-    for the object. Common modifiers are `:translate`, `:rotate` and `:scale`.
-    Pigments are also modifiers.
-
-# Extended Help
-If you still want to use the basic constructor `PoVRayObject(tag, description, modifiers)`:
-*don't*! If this package is complete, this should never be necessary. If you still think
-it necessary, consider submitting a new issue on [GitHub](https://github.com/mushunrek/PoVRay.jl).
-
-Still not deterred? You can force the creation of a new Object by using the 
-constructor 
-
-    PoVRayObject(tag, descriptors, modifiers, force_creation=true)
-"""
-struct PoVRayObject{N} <: AbstractPoVRay
-    tag::String
-    descriptors::NTuple{N, AbstractPoVRay}
-    modifiers::Vector{AbstractPoVRay}
-
-    function PoVRayObject(tag, descriptors, modifiers; force_creation=false)
-        if force_creation == true
-            return new{length(descriptors)}(tag, descriptors, modifiers)
-        end
-        error("Please refer to `?BasicObject` on how to correctly implement a new BasicObject")
-    end
+@quasiabstract struct PoVRayObject{N} <: AbstractPoVRay
+    tag::Symbol
+    descriptors::NTuple{N, PoVRayable}
+    modifiers::Vector{AbstractModifier}
 end
 
-function Base.deepcopy(object::PoVRayObject)
-    PoVRayObject(
-        object.tag,
-        object.descriptors,
-        object.modifiers,
-        force_creation=true
-    )
-end
-
-function ElementaryObjects.construct_pov(object::PoVRayObject)
-    pov = "$(object.tag){\n\t"
-    pov *= replace(
-        join(
-            construct_pov.(object.descriptors), "\n\t"
-        ),
-        "\n" => "\n\t"
-    )
-    pov *= "\n\t"
-    pov *= replace(
-        join(
-            construct_pov.(object.descriptors), "\n\t"
-        ),
-        "\n" => "\n\t"
-    )
-    pov *= "\n}\n"
-    """
-    for d in object.descriptors
-        pov *= replace(
-                    construct_pov(d),
-                    "\n" => "\n\t"
+function AbstractSuperType.construct_povray(object::PoVRayObject)
+    povray = "$(object.tag){\n\t"
+    povray *= replace(
+                join(object.descriptors, "\n"),
+                "\n" => "\n\t"
                 )
-    end
-    for m in object.modifiers
-        pov *= "$(replace(
-                        construct_pov(m),
-                        "\n" => "\n\t"
+    if length(object.modifiers) > 0
+        povray *= "\n\t"
+        povray *= replace(
+                        join(object.modifiers, "\n"),
+                        "\n"  => "\n\t"
                     )
-                )\n\t"
     end
-    """
-    return pov
+    povray *= "\n}"
+    return povray
 end
 
-function modify!(object::PoVRayObject, modifier::PoVRayModifier)
-    append!(object.modifiers, modifier)
-end
-
-function scale!(object::PoVRayObject, scaling)
-    modify!(
-        object,
-        Scaling(scaling)
+function deepcopy(object::T) where T <: PoVRayObject
+    T(
+        ( getfield(object, f) for f in fieldnames(T) )...
     )
 end
 
-function translate!(object::PoVRayObject, translation)
-    modify!(
-        object,
-        Translation(translation)
-    )
+modify!(object::PoVRayObject, modifier::AbstractModifier) = append!(object.modifiers, modifier)
+scale!(object::PoVRayObject, s) = modify!(object, Scaling(s))
+rotate!(object::PoVRayObject, r) = modify!(object, Rotation(r))
+translate!(object::PoVRayObject, t) = modify!(object, Translation(t))
+matrix_transform!(object::PoVRayObject, m) = modify!(object, MatrixTransformation(m))
+
+function scale(object, ss)
+    objects = [ deepcopy(object) for _ in ss ]
+    scale!.(objects, ss)
+    return objects
 end
 
-function rotate!(object::PoVRayObject, rotation)
-    modify!(
-        object,
-        Rotation()
-    )
+function rotate(object, rs)
+    objects = [ deepcopy(object) for _ in rs ]
+    rotate!.(objects, rs)
+    return objects
 end
 
-"""
-    Sphere(position, radius) -> PoVRayObject
-
-Creates a sphere at `position` with specified `radius`.
-
-# Example
-s = Sphere([0.0, 0.0, 0.0], 2)
-s[:scale] = 0.5
-s[:translate] = [1, 4.2, -3]
-"""
-function Sphere(position, radius; modifiers::Vector{PoVRayObject})
-    PoVRayObject(
-        "sphere", 
-        (PoVRayPoint(position), PoVRayNumber(radius)), 
-        modifiers, 
-        force_creation=true
-    )
+function translate(object, ts)
+    objects = [ deepcopy(object) for _ in ts ]
+    translate!.(objects, ts)
+    return objects
 end
 
-function color!(object::PoVRayObject, rgbft::RGBFT)
-    object[:pigment] = Pigment(rgbft)
-    return nothing
-end
-
-function Colored(object::PoVRayObject, rgbft::RGBFT)
-    colored = deepcopy(object)
-    colored[:pigment] = Pigment(rgbft)
-    return colored
-end
-
-function CSGUnion(objects::Union{Vector{PoVRayObject}, NTuple{N, PoVRayNumber}}) where N
-    PoVRayObject(
-        "union",
-        Tuple(objects),
-        [],
-        force_creation=true
-    )
-end
-
-"""
-struct Sphere <: BasicShape
-    position::PoVRayPoint
-    radius::Float64
-
-    Sphere(position, radius) = new(PoVRayPoint(position), radius)
-end
-
-Sphere() = Sphere([0.0, 0.0, 0.0], 1.0)
-
-struct Colored{T<:Object} <: Object
-    object::T
-    rgbft::RGBFT
-end
-
-struct CSGUnion <: CSG 
-    objects::Vector{Object}
+function matrix_transform(object, ms)
+    objects = [ deepcopy(object) for _ in ms ]
+    translate!.(objects, ts)
+    return objects
 end
 
 
-function ElementaryObjects.construct_pov(s::Sphere)
-    "sphere{
-    (construct_pov(s.position))
-    (s.radius)
-}"
-end
+module FiniteSolidPrimitives 
+    using ReusePatterns
 
-function ElementaryObjects.construct_pov(cobject::Colored{T}) where T <: Object
-    str = construct_pov(cobject.object)
-    index = findlast("}", str)
-    return str[1:collect(index)[1]-1] * 
-"   pigment{
-        (construct_pov(cobject.rgbft))
-    }
-}"
-end
+    using ...AbstractSuperType
+    using ..Objects
 
-function ElementaryObjects.construct_pov(union::CSGUnion)
-    str="union{\n"
-    for o in union.objects
-        str *= "    " * construct_pov(o) * "\n"
+    export Sphere
+
+    @quasiabstract struct FiniteSolidPrimitive{N} <: PoVRayObject{N} end
+
+    @quasiabstract struct Sphere <: FiniteSolidPrimitive{3} 
+        Sphere(position, radius, modifiers...) = new(:sphere, (PoVRayPoint(position), radius), [m for m in modifiers])
     end
-    return str * "}"
+
 end
-"""
+
+module InfiniteSolidPrimitives
+    using ReusePatterns
+
+    using ...AbstractSuperType
+    using ..Objects
+
+    export Plant
+
+    @quasiabstract struct InfiniteSolidPrimitive{N} <: PoVRayObject{N} end
+
+    @quasiabstract struct Plane <: InfiniteSolidPrimitive{2}
+        Plane(normal, distance, modifiers...) = new(:plane, (PoVRayPoint(normal), distance), [m for m in modifiers])
+    end
+
+end
+
+
+module CSGs 
+    using ReusePatterns
+    using ..Objects
+
+    export CSGUnion
+
+    @quasiabstract struct CSG{N} <: PoVRayObject{N} end
+
+    @quasiabstract struct CSGUnion{N} <: CSG{N} 
+        CSGUnion(objects, modifiers...) = new{length(objects)}(:union, Tuple(objects), [m for m in modifiers])
+    end
+end
+
+
+using .FiniteSolidPrimitives, .InfiniteSolidPrimitives, .CSGs
 
 end

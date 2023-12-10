@@ -1,11 +1,12 @@
 module PoVRay
-
+"""
 include("elementary_objects.jl")
+#include("modifiers.jl")
 include("objects.jl")
 include("cameras.jl")
 include("lights.jl")
 
-using .ElementaryObjects, .Objects, .Cameras, .Lights 
+using .ElementaryObjects, .Objects, .Cameras, .Lights
 
 export AbstractPoVRay, PoVRayNumber, PoVRayPoint
 export RGBFT
@@ -16,8 +17,23 @@ export Union
 export Camera, LookAtCamera
 export Light, PointLight
 export construct_pov, render
+"""
+
+include("abstract_supertype.jl")
+include("modifiers/modifiers.jl")
+include("objects.jl")
+using .AbstractSuperType, .Modifiers, .Objects
+
+export AbstractPoVRay, PoVRayable
+export PoVRayObject, PoVRayModifier
+
+using ReusePatterns
+
+export Sphere
 
 
+
+"""
 function render(
             objs::PoVRayObject, 
             camera::Camera=LookAtCamera(), 
@@ -33,7 +49,7 @@ global_settings{assumed_gamma 1.0}\n\n
 "
 
     for inc in include
-        str *= "#include \"$inc\"\n"
+        str *= "#include \"inc\"\n"
     end
 
     str *= construct_pov(camera) * "\n"
@@ -49,19 +65,19 @@ global_settings{assumed_gamma 1.0}\n\n
 
     open(ini_path, "w") do f
         write(f, "
-Width=$width
-Height=$height
+Width=width
+Height=height
 
 Antialias=On
 
-Input_File_Name=$pov_path
-Output_File_Name=$output_path
+Input_File_Name=pov_path
+Output_File_Name=output_path
 "
 )
     end
 
-    run(`povray -D $ini_path`)
+    run(`povray -D ini_path`)
 end
-
+"""
 
 end
