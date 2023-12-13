@@ -2,6 +2,69 @@ module Objects
 
 using ReusePatterns
 
+using ..Types 
+using ..PoVRayColors
+
+export LightSource
+export Sphere, Plane
+
+
+
+@quasiabstract struct LightSource <: Types.Object{1, Union{Types.PoVRayVector, PoVRayColor}}
+    function LightSource(location, color="white"; kwmodifiers...)
+        modifiers = Vector{Types.Modifier}()
+        for (key, value) in kwmodifiers
+            if key in 
+        end
+        new(
+            :light_source, 
+            Vector{Union{Types.PoVRayVector, PoVRayColor}}(
+                [Float64.(location), PoVRayColor(color)]
+            ), 
+            Vector{Types.Modifier}([m for m in modifiers])
+        )
+    end
+end
+
+@quasiabstract struct FiniteSolidPrimitive{N, T} <: Types.Object{N, T} end
+@quasiabstract struct InfiniteSolidPrimitive{N, T} <: Types.Object{N, T} end
+@quasiabstract struct CSG{N, T} <: Types.Object{N, T} end
+
+@quasiabstract struct Sphere <: FiniteSolidPrimitive{2, Types.PoVRayLiteral}
+    function Sphere(position, radius, modifiers::Types.Modifier...)
+        new(
+            :sphere, 
+            Vector{Types.PoVRayLiteral}([Float64.(position), radius]), 
+            Vector{Types.Modifier}([m for m in modifiers])
+        )
+    end
+end
+
+@quasiabstract struct Plane <: InfiniteSolidPrimitive{2, Types.PoVRayLiteral}
+    function Plane(normal, distance, modifiers...)
+        new(
+            :plane, 
+            Vector{Types.PoVRayLiteral}([Float64.(normal), Float64(distance)]), 
+            Vector{Types.Modifier}([m for m in modifiers])
+        )
+    end
+end
+
+function Types.construct_povray(plane::Plane)
+    povray = "plane{" * join(construct_povray.(plane.descriptors), ", ")
+    if length(plane.modifiers) > 0
+        povray *= "\n\t"
+        povray *= replace(
+            construct_povray(plane.modifiers),
+            "\n" => "\n\t"
+        )
+        povray *= "\n"
+    end
+    povray *= "}"
+    return povray
+end
+
+"""
 using ..AbstractSuperType, ..Modifiers
 
 export PoVRayObject
@@ -16,7 +79,7 @@ export CSGUnion
 end
 
 function AbstractSuperType.construct_povray(object::PoVRayObject)
-    povray = "$(object.tag){\n\t"
+    povray = "(object.tag){\n\t"
     povray *= replace(
                 join(object.descriptors, "\n"),
                 "\n" => "\n\t"
@@ -117,5 +180,5 @@ end
 
 
 using .FiniteSolidPrimitives, .InfiniteSolidPrimitives, .CSGs
-
+"""
 end

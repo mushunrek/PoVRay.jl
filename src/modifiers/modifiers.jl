@@ -2,6 +2,55 @@ module Modifiers
 
 using ReusePatterns
 
+using ..Types 
+
+export Transformation
+export Scaling, Translation, Rotation
+export Pigment
+
+@quasiabstract struct Transformation <: Types.DoubleModifier 
+    function Transformation(type, t)
+        @assert type in [:scale, :rotate, :translate, :matrix]
+        if t isa Number 
+            if type == :matrix
+                t = Vector{Float64}([t for _ in 1:12])
+            else
+                t = Vector{Float64}([t for _ in 1:3])
+            end
+        end
+        new(type, t)            
+    end
+end
+
+"""
+@quasiabstract struct Scaling <: Types.Transformation
+    Scaling(s) = new(:scale, s)
+end
+
+@quasiabstract struct Translation <: Types.Transformation
+    Translation(t) = new(:translate, t)
+end
+
+@quasiabstract struct Rotation <: Types.Transformation
+    rotation::Types.PoVRayVector
+    Rotation(r) = new(:rotate, r)
+end
+"""
+
+
+@quasiabstract struct Pigment <: Types.ModifiableModifier{1, Types.Keyword, Types.Modifier}
+    function Pigment(descriptors)
+        @show typeof(descriptors)
+        new(
+            :pigment,
+            Vector{Types.Keyword}(descriptors),
+            Vector{Types.Modifier}()
+        )
+    end
+end
+
+
+"""
 using ..AbstractSuperType
 
 export AbstractModifier
@@ -15,6 +64,7 @@ using .Patterns, .PatternModifiers
 
 include("object_modifiers.jl")
 using .ObjectModifiers
+"""
 
 """
 @quasiabstract struct Transformation{T<:PoVRayable} <: ObjectModifier
@@ -59,6 +109,7 @@ end
 
 
 """
+
 
 """
 using ..ElementaryObjects

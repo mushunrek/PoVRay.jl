@@ -1,6 +1,6 @@
 module Lights
 
-using ..ElementaryObjects
+using ..Types
 using Colors
 
 export Light, PointLight
