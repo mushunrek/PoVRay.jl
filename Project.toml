@@ -9,6 +9,7 @@ ReusePatterns = "a39b5e78-89b5-562b-97d8-70689129df0c"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
+ReusePatterns = "0.3"
 julia = "1"
 
 [extras]
